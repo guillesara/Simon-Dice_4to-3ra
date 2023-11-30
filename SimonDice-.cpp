@@ -1,14 +1,14 @@
 #include <LiquidCrystal_I2C.h>
 
 // Definición de pines para la pantalla LCD I2C
-LiquidCrystal_I2C lcd(0x20, 16, 2);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 // Definición de pines para LEDs, pads (botones), botones de menú y un zumbador (buzzer)
 int Leds[] = {2, 3, 4, 5};
 int Pads[] = {6, 7, 8, 9};
 int MenuButtons[] = {10, 11, 12};
 int Buzzer = 13;
-int BuzzerTones[] = {200, 300, 400, 500};
+int BuzzerTones[] = {3200, 3300, 3400, 3500};
 
 // Variables del juego
 int Sequence[255];
@@ -79,6 +79,17 @@ void setup()
     // Generar la secuencia inicial y mostrar la pantalla de inicio
     GenerateSequence();
     DrawScreen("HOME");
+  
+    // Prende y apaga los leds
+    for (int i = 0; i < (sizeof(Leds)/sizeof(Leds[0])); i++)
+    {
+      digitalWrite(Leds[i], HIGH);
+    }
+    delay(1000);
+    for (int i = 0; i < (sizeof(Leds)/sizeof(Leds[0])); i++)
+    {
+      digitalWrite(Leds[i], LOW);
+    }
 
     Serial.println("Started");
 }
@@ -90,12 +101,12 @@ void loop()
     if (!digitalRead(MenuButtons[0]))
     {
         ChangeOption("UP");
-        delay(50);
+        delay(200);
     }
     else if (!digitalRead(MenuButtons[1]))
     {
         ChangeOption("DOWN");
-        delay(50);
+        delay(200);
     }
     else if (!digitalRead(MenuButtons[2]))
     {
@@ -115,7 +126,7 @@ void loop()
             GameSpeedrunMode(Option);
         }
 
-        delay(50);
+        delay(200);
     }
 }
 
@@ -123,7 +134,7 @@ void loop()
 void GenerateSequence()
 {
     Level = 0;
-    randomSeed(millis());
+    randomSeed(analogRead(A1));
     for (int i = 0; i < (sizeof(Sequence) / sizeof(Sequence[0])); i++)
     {
         Sequence[i] = random(4);
@@ -145,6 +156,8 @@ void GameNormalMode(char* Mode)
 
     DrawScreen("NORMAL_GAME");
 
+    delay(1500);
+
     while (MainLoop)
     {
         RemainPads = Level;
@@ -154,9 +167,10 @@ void GameNormalMode(char* Mode)
         Serial.print("Sequencia ");
         for (int i = 0; i < Level; i++)
         {
+            tone(Buzzer, BuzzerTones[Sequence[i]], 200);
             // Visualización de la secuencia en los LEDs
             digitalWrite(Leds[Sequence[i]], HIGH);
-            delay(200);
+            delay(500);
             digitalWrite(Leds[Sequence[i]], LOW);
             delay(500);
         }
@@ -166,7 +180,7 @@ void GameNormalMode(char* Mode)
         for (int i = 0; i < Level; i++)
         {
             bool loop = true;
-            Time = millis() + (Level * 500) + 3000;
+            Time = millis() + 2000; //+ (Level * 500)
 
             while (loop)
             {
@@ -187,6 +201,7 @@ void GameNormalMode(char* Mode)
                 {
                     // Indicar visual y auditivamente la respuesta correcta
                     digitalWrite(Leds[Sequence[i]], HIGH);
+                    Serial.println(BuzzerTones[Sequence[i]]);
                     tone(Buzzer, BuzzerTones[Sequence[i]], 200);
                     delay(200);
                     digitalWrite(Leds[Sequence[i]], LOW);
@@ -212,7 +227,7 @@ void GameNormalMode(char* Mode)
                             }
                             else
                             {
-                                tone(Buzzer, 100, 500);
+                                //tone(Buzzer, 100, 500);
                                 for (int i = 0; i < (sizeof(Leds) / sizeof(Leds[0])); i++)
                                 {
                                     digitalWrite(Leds[i], HIGH);
@@ -297,7 +312,7 @@ void GameFail()
     for (int i = 0; i < 3; i++)
     {
         // Indicar visual y auditivamente el fallo
-        tone(Buzzer, 100, 500);
+        tone(Buzzer, 1000, 200);
         for (int i = 0; i < (sizeof(Leds) / sizeof(Leds[0])); i++)
         {
             digitalWrite(Leds[i], HIGH);
